@@ -1,7 +1,9 @@
 package com.subham.serviceNowIntegration.service;
 
+import com.subham.serviceNowIntegration.configuration.ServiceNowProperties;
 import com.subham.serviceNowIntegration.model.IncidentDetailsDTO;
 import com.subham.serviceNowIntegration.model.IncidentResponseDTO;
+import lombok.extern.slf4j.Slf4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -15,22 +17,26 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @Service
+@Slf4j
 public class ServiceNowService {
 
-    private static final Logger log = LoggerFactory.getLogger(ServiceNowService.class);
+    private final ServiceNowProperties props;
 
     private final RestTemplate restTemplate;
 
-    public ServiceNowService(RestTemplate restTemplate)
+    public ServiceNowService(RestTemplate restTemplate, ServiceNowProperties props)
     {
         this.restTemplate = restTemplate;
+        this.props = props;
     }
 
     public void createIncident(IncidentDetailsDTO incident) {
 
         String endPoint = "https://dev321691.service-now.com/api/now/import/u_spring_to_incident";
-        String username = "admin";
-        String password = "viW%+L7Tvm9R";
+        String username = props.getUsername();
+        String password = props.getPassword();
+        log.info("SNOW Username : {}", username);
+        log.info("SNOW Password : {}", password);
         String auth = username + ":" + password;
 
         //Creating the Authorization Header with username and password with Base64 Password Encoder

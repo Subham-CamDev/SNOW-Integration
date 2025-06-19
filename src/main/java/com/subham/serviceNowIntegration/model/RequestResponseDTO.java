@@ -21,14 +21,11 @@ public class RequestResponseDTO {
         @JsonProperty("request_number")
         private String requestNumber;
 
-        @JsonProperty("request_sys_id")
+        @JsonProperty("request_id")
         private String requestSysId;
 
-        @JsonProperty("item_number")
-        private String itemNumber;
-
-        @JsonProperty("item_sys_id")
-        private String itemSysId;
+        @JsonProperty("table")
+        private String table;
 
     }
 }

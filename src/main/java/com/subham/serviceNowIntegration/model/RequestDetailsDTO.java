@@ -13,7 +13,10 @@ public class RequestDetailsDTO {
     @JsonProperty("item_name")
     private String itemName;
 
-    @JsonProperty("requested_for")
-    private String requestedFor;
+    @JsonProperty("sysparm_id")
+    private String sysParamId;
+
+    @JsonProperty("sysparm_quantity")
+    private String quantity;
 
 }

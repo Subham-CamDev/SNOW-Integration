@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @Slf4j
@@ -30,6 +31,7 @@ public class UploadAttachment {
         this.props = props;
     }
 
+    //Creating the Servicenow Endpoint
     public String sendAttachmentToSnow(String tableName, String recordSysId, MultipartFile file) throws IOException {
         String path = "https://dev321691.service-now.com/api/now/attachment/file";
         String endpoint = UriComponentsBuilder.fromUriString(path)
@@ -42,37 +44,40 @@ public class UploadAttachment {
         String password = props.getPassword();
         String auth = username + ":" + password;
 
+        //Encoding the username and password
         byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
         String authHeader = "Basic " + new String(encodedAuth);
 
+        //Creating Request Headers
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.set("Authorization", authHeader);
 
-        ByteArrayResource resource = new ByteArrayResource(file.getBytes()) {
-            @Override
-            public String getFilename() {
-                return file.getOriginalFilename();
-            }
-        };
+        //Creating the Request Body with Binary File data
+        HttpEntity<byte[]> request = new HttpEntity<>(file.getBytes(), headers);
 
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("file", resource);
+        //log.info("Final headers: {}", headers);
+        //log.info("Uploading file: {}, with detected type: {}", file.getOriginalFilename(), file.getContentType());
 
-        HttpEntity<MultiValueMap<String, Object>> request = new HttpEntity<>(body, headers);
 
         try
         {
+            //Sending the Request to ServiceNow
             ResponseEntity<JsonNode> response = restTemplate.exchange(endpoint, HttpMethod.POST, request, JsonNode.class);
 
             assert response.getBody() != null;
             JsonNode resultArray = response.getBody().get("result");
 
-            return resultArray.get("sys_id").asText();
+            //Checking if successful and sending back the attachment sysID
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+                return response.getBody().get("result").get("sys_id").asText();
+            } else {
+                throw new RuntimeException("Failed to upload attachment. Response: " + response);
+            }
 
         } catch (Exception e) {
             throw new RuntimeException("Failed to upload attachment : "+e.getMessage(),e);
         }
     }
-
 }

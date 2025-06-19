@@ -30,9 +30,11 @@ public class CatalogItemService {
         String password = props.getPassword();
         String auth = username + ":" + password;
 
+        //encoding the authorization details
         byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
         String authHeader = "Basic " + new String(encodedAuth);
 
+        //Creating the endpoint of ServiceNow
         String path = "https://dev321691.service-now.com/api/now/table/sc_cat_item";
         String endpoint = UriComponentsBuilder.fromUriString(path)
                 .queryParam("sysparm_query", "name=" + itemName + "^ORDERBYname")
@@ -42,20 +44,24 @@ public class CatalogItemService {
 
         //log.info("The full URL is : "+endpoint);
 
+        //Creating the headers
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setAccept(List.of(MediaType.APPLICATION_JSON));
         headers.set("Authorization", authHeader);
 
+        //Creating the Request Body
         HttpEntity<String> request = new HttpEntity<>(headers);
 
         try {
+            //Sending the Request to ServiceNow
             ResponseEntity<JsonNode> response = restTemplate.exchange(endpoint, HttpMethod.GET, request, JsonNode.class);
 
             assert response.getBody() != null;
             JsonNode resultArray = response.getBody().get("result");
             //log.info("The responseArray is : "+resultArray);
 
+            //Matching the item name and active status and sending back the item sys_id
             for (JsonNode item : resultArray) {
                 if (itemName.equalsIgnoreCase(item.get("name").asText())) {
                     if (item.get("active").asBoolean()) {

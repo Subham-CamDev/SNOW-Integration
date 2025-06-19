@@ -62,10 +62,11 @@ public class ServiceNowService {
         newIncident.setShortDescription(incident.getShortDescription());
         newIncident.setDescription(incident.getDescription());
 
+        //Creating the Request Body
         HttpEntity<IncidentDetailsDTO> request = new HttpEntity<>(newIncident, headers);
 
         try {
-            //Make the POST Call
+            //Make the POST Call to ServiceNow
             ResponseEntity<IncidentResponseDTO> response = restTemplate.exchange(endPoint, HttpMethod.POST, request, IncidentResponseDTO.class);
 
             //saving the response in the POJO class and iterating over the fields to get the Incident Number and SysID
@@ -75,7 +76,12 @@ public class ServiceNowService {
                 log.info("Incident Created: Number = {}, Sys ID = {}",
                         incidentDetails.getDisplayValue(),
                         incidentDetails.getSysId());
+
+                //Sending the attachment to the created Incident record
                 String attachmentSysId = uploadService.sendAttachmentToSnow(incidentDetails.getTable(), incidentDetails.getSysId(), file);
+                log.info("Attachment successfully added to "+incidentDetails.getDisplayValue()+" with ID "+attachmentSysId);
+
+                //Returning the Incident Number
                 return incidentDetails.getDisplayValue();
             } else {
                 log.warn("ServiceNow response did not contain incident details.");
@@ -94,7 +100,7 @@ public class ServiceNowService {
         return null;
     }
 
-    public String createRequest(RequestDetailsDTO request)
+    public String createRequest(RequestDetailsDTO request, MultipartFile file)
     {
         String endPoint = "https://dev321691.service-now.com/api/sn_sc/servicecatalog/items/sys_id/order_now";
         String username = props.getUsername();
@@ -119,19 +125,27 @@ public class ServiceNowService {
         newRequest.setQuantity(request.getQuantity());
         newRequest.setSysParamId(itemSysId);
 
+        //Creating the Request Body
         HttpEntity<RequestDetailsDTO> requestBody = new HttpEntity<>(newRequest, headers);
 
         try{
-            //Make the POST Call
+            //Make the POST Call to ServiceNow
             ResponseEntity<RequestResponseDTO> response = restTemplate.exchange(endPoint.replace("sys_id", itemSysId), HttpMethod.POST, requestBody, RequestResponseDTO.class);
 
             RequestResponseDTO responseBody = response.getBody();
 
+            //Checking for Proper Response
             if (responseBody != null && responseBody.getResult() != null) {
                 RequestResponseDTO.Result result = responseBody.getResult();
                 log.info("Request Created: Number = {}, Sys ID = {}",
                         result.getRequestNumber(),
                         result.getRequestSysId());
+
+                //Sending the attachment to the created Request
+                String attachmentSysId = uploadService.sendAttachmentToSnow("sc_request", result.getRequestSysId(), file);
+                log.info("Attachment successfully added to "+result.getRequestNumber()+" with ID "+attachmentSysId);
+
+                //Returning the Request Number
                 return result.getRequestNumber();
             } else {
                 log.warn("ServiceNow response did not contain Request details.");
@@ -144,6 +158,8 @@ public class ServiceNowService {
         catch (RestClientException e) {
             log.error("Failed to connect to ServiceNow: {}", e.getMessage());
             throw e;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
         return null;
     }

@@ -44,10 +44,14 @@ public class ServiceNowController {
         }
     }
 
-    @PostMapping("/request")
-    public ResponseEntity<String> createSnowRequest(@RequestBody RequestDetailsDTO request)
+    @PostMapping(value = "/request", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    public ResponseEntity<String> createSnowRequest(@RequestPart("request") @Validated String requestJson,
+                                                    @RequestPart("attachment") MultipartFile file) throws JsonProcessingException
     {
-        String ID = service.createRequest(request);
+        ObjectMapper mapper = new ObjectMapper();
+        RequestDetailsDTO request = mapper.readValue(requestJson, RequestDetailsDTO.class);
+
+        String ID = service.createRequest(request, file);
         if (ID != null) {
             return new ResponseEntity<>("Request " + ID + " Created Successfully", HttpStatus.CREATED);
         } else {
